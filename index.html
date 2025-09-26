@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>칼로리 음식 추천기</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9fafb; padding: 20px; }
+    h1 { color: #333; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    input, select, button { padding: 8px; margin-top: 8px; width: 100%; border: 1px solid #ccc; border-radius: 6px; }
+    .result { margin-top: 20px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    .card h3 { margin: 0 0 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>칼로리 기반 음식 추천기</h1>
+    <p>목표 칼로리를 입력하면 그에 맞는 음식을 추천해드립니다.</p>
+
+    <label for="kcalInput">목표 칼로리 (kcal):</label>
+    <input type="number" id="kcalInput" placeholder="예: 500">
+
+    <label for="maxItems">최대 음식 개수:</label>
+    <select id="maxItems">
+      <option value="1">1개</option>
+      <option value="2">2개</option>
+      <option value="3" selected>3개</option>
+    </select>
+
+    <button onclick="recommendFood()">추천받기</button>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    // 음식 DB (한국식 예시)
+    const FOODS = [
+      { name: "흰쌀밥 한공기", kcal: 310 },
+      { name: "현미밥 한공기", kcal: 300 },
+      { name: "닭가슴살 100g", kcal: 165 },
+      { name: "계란 1개", kcal: 78 },
+      { name: "바나나 1개", kcal: 105 },
+      { name: "사과 1개", kcal: 95 },
+      { name: "김치찌개 1인분", kcal: 250 },
+      { name: "된장찌개 1인분", kcal: 200 },
+      { name: "피자 한조각", kcal: 285 },
+      { name: "아이스크림 1스쿱", kcal: 137 },
+      { name: "떡볶이 1인분", kcal: 350 },
+      { name: "치킨 다리 1조각", kcal: 150 },
+      { name: "감자 1개", kcal: 163 },
+    ];
+
+    // 추천 알고리즘
+    function recommendFood() {
+      const target = Number(document.getElementById("kcalInput").value);
+      const maxItems = Number(document.getElementById("maxItems").value);
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
+
+      if (!target || target < 50) {
+        resultDiv.innerHTML = "<p>⚠️ 50 이상 칼로리를 입력하세요.</p>";
+        return;
+      }
+
+      // 모든 조합 생성
+      const combos = [];
+      function dfs(start, picked) {
+        const sum = picked.reduce((acc, f) => acc + f.kcal, 0);
+        if (picked.length > 0 && picked.length <= maxItems) {
+          combos.push({ foods: [...picked], sum });
+        }
+        if (picked.length === maxItems) return;
+        for (let i = start; i < FOODS.length; i++) {
+          picked.push(FOODS[i]);
+          dfs(i + 1, picked);
+          picked.pop();
+        }
+      }
+      dfs(0, []);
+
+      // 목표와 차이가 적은 순 정렬
+      combos.sort((a, b) => Math.abs(a.sum - target) - Math.abs(b.sum - target));
+
+      // 상위 5개만 출력
+      const top = combos.slice(0, 5);
+      if (top.length === 0) {
+        resultDiv.innerHTML = "<p>결과가 없습니다. 다른 칼로리를 입력해보세요.</p>";
+        return;
+      }
+
+      top.forEach((combo, idx) => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <h3>추천 ${idx + 1}: 총 ${combo.sum} kcal</h3>
+          <p>${combo.foods.map(f => f.name).join(" + ")}</p>
+          <small>차이: ${Math.abs(combo.sum - target)} kcal</small>
+        `;
+        resultDiv.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
